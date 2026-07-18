@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+  <string name="auth_token">eyJhbGciOiJIUzI1NiJ9.mock.token</string>
+  <string name="stripe_secret_key">sk_live_51H8xamplekey00000000</string>
+  <boolean name="is_logged_in" value="true" />
+</map>

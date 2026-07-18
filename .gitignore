@@ -1,0 +1,35 @@
+node_modules/
+dist/
+build/
+coverage/
+.env
+.env.*
+*.log
+
+# Dependency caches
+.npm/
+.pnpm-store/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# Runtime and package manager logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# TypeScript incremental builds
+*.tsbuildinfo
+
+.next/
+**/.next/
+out/
+**/out/

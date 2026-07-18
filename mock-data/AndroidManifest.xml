@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest>
+  <application>
+    <provider
+      android:name=".UserDataProvider"
+      android:authorities="com.example.app.provider"
+      android:exported="true" />
+  </application>
+</manifest>
