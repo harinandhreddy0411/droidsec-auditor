@@ -1,9 +1,9 @@
 {
-  "name": "my-server",
+  "name": "droidsec-auditor",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Hybrid Mobile and Web Security Auditor Engine",
+  "description": "NitroStack MCP server for Android and hybrid web application security auditing.",
   "scripts": {
     "dev": "nitrostack-cli dev",
     "build": "nitrostack-cli build",
@@ -13,14 +13,30 @@
     "install:all": "nitrostack-cli install",
     "widget": "npm --prefix src/widgets"
   },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/harinandhreddy0411/droidsec-auditor.git"
+  },
+  "keywords": [
+    "nitrostack",
+    "mcp",
+    "android-security",
+    "static-analysis",
+    "hackathon",
+    "droidsec"
+  ],
+  "license": "UNLICENSED",
   "dependencies": {
     "@modelcontextprotocol/ext-apps": ">=0.1.0",
     "@nitrostack/core": "^1.0.13",
     "acorn": "^8.17.0",
     "acorn-walk": "^8.3.5",
     "better-sqlite3": "^12.11.1",
-    "dotenv": "^16.3.1",
-    "zod": "^3.22.4"
+    "dotenv": "^16.3.1"
   },
   "devDependencies": {
     "@nitrostack/cli": "^1.0.14",
@@ -28,7 +44,7 @@
     "@types/node": "^22.10.0",
     "typescript": "^5.3.3"
   },
-  "author": "Risersss",
+  "author": "Harinandh Reddy",
   "nitrostack": {
     "skillsVersion": "1.0.0"
   }

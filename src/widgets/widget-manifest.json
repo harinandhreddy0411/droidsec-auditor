@@ -2,47 +2,43 @@
   "version": "1.0.0",
   "widgets": [
     {
-      "uri": "/calculator-result",
-      "name": "Calculator Result",
-      "description": "Displays the result of a calculation with operation details",
+      "uri": "/audit-summary",
+      "name": "Audit Summary",
+      "description": "Displays summarized DroidSec Auditor findings",
       "examples": [
         {
-          "name": "Addition Example",
-          "description": "Shows the result of adding 5 + 3",
+          "name": "Manifest Finding Example",
+          "description": "Shows an Android manifest security finding",
           "data": {
-            "operation": "add",
-            "a": 5,
-            "b": 3,
-            "result": 8,
-            "expression": "5 + 3 = 8"
+            "severity": "HIGH",
+            "issue": "Exported Content Provider with no permission restriction",
+            "source": "AndroidManifest.xml",
+            "remediation": "Set android:exported=\"false\" unless cross-app access is required."
           }
         },
         {
-          "name": "Multiplication Example",
-          "description": "Shows the result of multiplying 6 × 7",
+          "name": "Secret Finding Example",
+          "description": "Shows a hardcoded secret finding",
           "data": {
-            "operation": "multiply",
-            "a": 6,
-            "b": 7,
-            "result": 42,
-            "expression": "6 × 7 = 42"
+            "severity": "CRITICAL",
+            "issue": "Google API Key",
+            "source": "SharedPreferences",
+            "remediation": "Move secrets to environment variables or a secrets manager."
           }
         },
         {
-          "name": "Division Example",
-          "description": "Shows the result of dividing 20 ÷ 4",
+          "name": "Web Finding Example",
+          "description": "Shows a web security configuration finding",
           "data": {
-            "operation": "divide",
-            "a": 20,
-            "b": 4,
-            "result": 5,
-            "expression": "20 ÷ 4 = 5"
+            "severity": "MEDIUM",
+            "issue": "Missing Content Security Policy",
+            "source": "index.html",
+            "remediation": "Add a strict Content-Security-Policy meta tag or response header."
           }
         }
       ],
-      "tags": ["calculator", "math", "result"]
+      "tags": ["security", "android", "audit"]
     }
   ],
-  "generatedAt": "2025-01-01T00:00:00.000Z"
+  "generatedAt": "2026-07-18T00:00:00.000Z"
 }
-

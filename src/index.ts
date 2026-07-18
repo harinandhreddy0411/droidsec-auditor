@@ -1,5 +1,5 @@
 /**
- * Calculator MCP Server
+ * DroidSec Auditor MCP Server
  * 
  * Main entry point for the MCP server.
  * Uses the @McpApp decorator pattern for clean, NestJS-style architecture.
@@ -24,6 +24,6 @@ async function bootstrap() {
 
 // Start the application
 bootstrap().catch((error) => {
-  console.error('❌ Failed to start server:', error);
+  console.error('Failed to start DroidSec Auditor MCP server:', error);
   process.exit(1);
 });

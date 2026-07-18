@@ -6,6 +6,7 @@ import * as acorn from 'acorn';
 import * as walk from 'acorn-walk';
 
 const mockDir = path.join(process.cwd(), 'mock-data');
+const uploadDir = path.join(process.cwd(), 'uploaded');
 
 const FALLBACK_PATTERNS = [
   { id: 'google-api-key', description: 'Google API Key', regex: 'AIza[0-9A-Za-z\\-_]{35}' },
@@ -46,6 +47,9 @@ const VULNERABLE_DEPENDENCY_DICTIONARY: Record<string, string> = {
 async function fetchLivePatterns(ctx: ExecutionContext) {
   try {
     const res = await fetch('https://raw.githubusercontent.com/gitleaks/gitleaks/master/config/gitleaks.toml');
+    if (!res.ok) {
+      throw new Error(`Gitleaks fetch failed with HTTP ${res.status}`);
+    }
     const raw = await res.text();
     const ruleBlocks = raw.split('[[rules]]').slice(1);
     const patterns = ruleBlocks.map(block => {
@@ -64,6 +68,35 @@ async function fetchLivePatterns(ctx: ExecutionContext) {
     ctx.logger.error('Live Gitleaks fetch failed, using fallback patterns', { error: e instanceof Error ? e.message : String(e) });
     return FALLBACK_PATTERNS;
   }
+}
+
+function safeUploadedPath(fileName: string) {
+  const safeName = path.basename(fileName);
+  if (!safeName || safeName === '.' || safeName === '..') {
+    throw new Error('Invalid file name.');
+  }
+
+  const resolvedUploadDir = path.resolve(uploadDir);
+  const resolvedPath = path.resolve(resolvedUploadDir, safeName);
+  if (!resolvedPath.startsWith(resolvedUploadDir + path.sep)) {
+    throw new Error('Invalid upload path.');
+  }
+
+  return resolvedPath;
+}
+
+function safeReadableProjectPath(filePath: string) {
+  const resolvedRoot = path.resolve(process.cwd());
+  const resolvedPath = path.resolve(filePath);
+  if (!resolvedPath.startsWith(resolvedRoot + path.sep)) {
+    throw new Error('File path must stay inside the project directory.');
+  }
+
+  if (!fs.existsSync(resolvedPath)) {
+    throw new Error('File not found.');
+  }
+
+  return resolvedPath;
 }
 
 export const REMEDIATIONS: Record<string, string> = {
@@ -99,9 +132,16 @@ export class AuditTools {
       stringsXml = fs.readFileSync(path.join(mockDir, 'values', 'strings.xml'), 'utf-8');
     } catch (e) {}
 
-    const db = new Database(path.join(mockDir, 'app.db'), { readonly: true });
-    const apiConfig = db.prepare('SELECT * FROM api_config').all();
-    db.close();
+    let apiConfig: unknown[] = [];
+    const dbPath = path.join(mockDir, 'app.db');
+    if (fs.existsSync(dbPath)) {
+      const db = new Database(dbPath, { readonly: true });
+      try {
+        apiConfig = db.prepare('SELECT * FROM api_config').all();
+      } finally {
+        db.close();
+      }
+    }
 
     const haystacks = [
       { source: 'SharedPreferences: UserSession.xml', text: sharedPrefs },
@@ -198,8 +238,12 @@ export class AuditTools {
     }
 
     const db = new Database(dbPath, { readonly: true });
-    const users = db.prepare('SELECT username, password, session_token FROM users').all() as any[];
-    db.close();
+    let users: any[] = [];
+    try {
+      users = db.prepare('SELECT username, password, session_token FROM users').all() as any[];
+    } finally {
+      db.close();
+    }
 
     const findings = users.map(u => ({
       username: u.username,
@@ -224,11 +268,11 @@ export class AuditTools {
   })
   async ingestFile(input: any, ctx: ExecutionContext) {
     ctx.logger.info('Ingesting file for analysis', { name: input.file_name });
-    const buffer = Buffer.from(input.file_content_base64, 'base64');
+    const base64 = input.file_content_base64.replace(/^data:[^;]+;base64,/, '');
+    const buffer = Buffer.from(base64, 'base64');
     const text = buffer.toString('utf-8');
-    const uploadDir = path.join(process.cwd(), 'uploaded');
     fs.mkdirSync(uploadDir, { recursive: true });
-    const savedPath = path.join(uploadDir, input.file_name);
+    const savedPath = safeUploadedPath(input.file_name);
     fs.writeFileSync(savedPath, text);
 
     const isAndroidXml = input.file_name.endsWith('.xml');
@@ -250,7 +294,16 @@ export class AuditTools {
   })
   async scanJsAst(input: any, ctx: ExecutionContext) {
     ctx.logger.info('Running AST scan on JS file', { path: input.file_path });
-    const code = fs.readFileSync(input.file_path, 'utf-8');
+    let code = '';
+    try {
+      code = fs.readFileSync(safeReadableProjectPath(input.file_path), 'utf-8');
+    } catch (error) {
+      return {
+        total_findings: 0,
+        findings: [],
+        error: error instanceof Error ? error.message : 'Could not read file.'
+      };
+    }
 
     const findings: any[] = [];
     try {
@@ -298,7 +351,12 @@ export class AuditTools {
     }
 
     const findings: any[] = [];
-    const packageData = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+    let packageData: any;
+    try {
+      packageData = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+    } catch {
+      return { total_findings: 0, findings: [], error: 'package.json could not be parsed' };
+    }
     const allDependencies = { ...(packageData.dependencies || {}), ...(packageData.devDependencies || {}) };
 
     for (const [dependencyName, installedVersion] of Object.entries(allDependencies)) {

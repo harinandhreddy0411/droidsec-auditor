@@ -5,6 +5,12 @@ import path from 'path';
 
 const mockDir = path.join(process.cwd(), 'mock-data');
 
+const FALLBACK_PATTERNS = [
+  { id: 'google-api-key', description: 'Google API Key', regex: 'AIza[0-9A-Za-z\\-_]{35}' },
+  { id: 'stripe-live-key', description: 'Stripe Live Secret Key', regex: 'sk_live_[0-9a-zA-Z]{24,}' },
+  { id: 'generic-jwt', description: 'Generic JWT', regex: 'eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+' }
+];
+
 export class AuditResources {
   @Resource({
     uri: 'audit://app-storage',
@@ -15,10 +21,26 @@ export class AuditResources {
   async getAppStorage(uri: string, ctx: ExecutionContext) {
     ctx.logger.info('Extracting local app storage');
 
-    const db = new Database(path.join(mockDir, 'app.db'), { readonly: true });
-    const users = db.prepare('SELECT * FROM users').all();
-    const apiConfig = db.prepare('SELECT * FROM api_config').all();
-    db.close();
+    const dbPath = path.join(mockDir, 'app.db');
+    if (!fs.existsSync(dbPath)) {
+      return {
+        contents: [{
+          uri,
+          mimeType: 'application/json',
+          text: JSON.stringify({ error: 'mock-data/app.db not found' }, null, 2)
+        }]
+      };
+    }
+
+    const db = new Database(dbPath, { readonly: true });
+    let users: unknown[] = [];
+    let apiConfig: unknown[] = [];
+    try {
+      users = db.prepare('SELECT * FROM users').all();
+      apiConfig = db.prepare('SELECT * FROM api_config').all();
+    } finally {
+      db.close();
+    }
 
     const sharedPrefs = fs.readFileSync(
       path.join(mockDir, 'shared_prefs', 'UserSession.xml'), 'utf-8'
@@ -46,8 +68,12 @@ export class AuditResources {
     ctx.logger.info('Fetching live Gitleaks rule set');
 
     let patterns: any[] = [];
+    let source = 'live fetch from gitleaks/gitleaks master';
     try {
       const res = await fetch('https://raw.githubusercontent.com/gitleaks/gitleaks/master/config/gitleaks.toml');
+      if (!res.ok) {
+        throw new Error(`Gitleaks fetch failed with HTTP ${res.status}`);
+      }
       const raw = await res.text();
       const ruleBlocks = raw.split('[[rules]]').slice(1);
       patterns = ruleBlocks.map(block => {
@@ -62,13 +88,15 @@ export class AuditResources {
       }).filter(p => p.regex);
     } catch (e) {
       ctx.logger.error('Failed to fetch live Gitleaks config', { error: e instanceof Error ? e.message : String(e) });
+      patterns = FALLBACK_PATTERNS;
+      source = 'fallback patterns';
     }
 
     return {
       contents: [{
         uri,
         mimeType: 'application/json',
-        text: JSON.stringify({ source: 'live fetch from gitleaks/gitleaks master', rule_count: patterns.length, patterns }, null, 2)
+        text: JSON.stringify({ source, rule_count: patterns.length, patterns }, null, 2)
       }]
     };
   }

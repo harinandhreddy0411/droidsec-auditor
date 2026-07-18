@@ -17,13 +17,13 @@ export class AuditPrompts {
       },
       {
         role: 'assistant' as const,
-        content: `# Penetration Test Report — DroidSec Hybrid Auditor
+        content: `# Penetration Test Report - DroidSec Auditor
 
 The findings below were extracted directly from the app's local storage, manifest, and/or source files, then checked against live Gitleaks secret patterns and AST-based static analysis. Each finding includes a suggested remediation and requires developer/security-engineer sign-off before any fix is applied.
 
 ${args.findings_json}
 
-**Recommended next step:** route each CRITICAL/HIGH finding to a security engineer for review before remediating — do not auto-patch.`
+**Recommended next step:** route each CRITICAL/HIGH finding to a security engineer for review before remediating. Do not auto-patch production systems without validation.`
       }
     ];
   }
