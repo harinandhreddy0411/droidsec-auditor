@@ -5,8 +5,9 @@
   "type": "module",
   "description": "NitroStack MCP server for Android and hybrid web application security auditing.",
   "scripts": {
+    "preinstall": "apk add --no-cache python3 make g++",
     "dev": "nitrostack-cli dev",
-    "build": "nitrostack-cli build",
+    "build": "tsc && nitrostack-cli build",
     "start": "npm run build && nitrostack-cli start",
     "start:prod": "nitrostack-cli start",
     "upgrade": "nitrostack-cli upgrade",
